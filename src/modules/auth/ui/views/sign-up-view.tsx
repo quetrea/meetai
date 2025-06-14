@@ -5,7 +5,6 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OctagonAlertIcon } from "lucide-react";
 
@@ -24,6 +23,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useRouter } from "next/navigation";
+import { FaGithub, FaGoogle } from "react-icons/fa";
 
 const formSchema = z
   .object({
@@ -64,10 +65,32 @@ export const SignUpView = () => {
         name: value.name,
         email: value.email,
         password: value.password,
+        callbackURL: "/",
       },
       {
         onSuccess: () => {
           router.push("/");
+          setPending(false);
+        },
+        onError: ({ error }) => {
+          setPending(false);
+
+          setError(error.message);
+        },
+      }
+    );
+  };
+
+  const onSocial = (provider: "github" | "google") => {
+    setError(null);
+    setPending(true);
+    authClient.signIn.social(
+      {
+        provider: provider,
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => {
           setPending(false);
         },
         onError: ({ error }) => {
@@ -196,18 +219,20 @@ export const SignUpView = () => {
                   <Button
                     disabled={pending}
                     variant={"outline"}
+                    onClick={() => onSocial("google")}
                     type="button"
                     className="w-full"
                   >
-                    Google
+                    <FaGoogle className="size-5" />
                   </Button>
                   <Button
                     disabled={pending}
                     variant={"outline"}
+                    onClick={() => onSocial("github")}
                     type="button"
                     className="w-full"
                   >
-                    Github
+                    <FaGithub className="size-5" />
                   </Button>
                 </div>
                 <div className="text-center text-sm">
@@ -224,6 +249,7 @@ export const SignUpView = () => {
           </Form>
 
           <div className="bg-radial from-green-700 to-green-900 relative hidden md:flex flex-col gap-y-4 items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={"/logo.svg"} alt="Image" className="h-[92px] w-[92px]" />
             <p className="text-2xl font-semibold text-white">Meet.ai</p>
           </div>
