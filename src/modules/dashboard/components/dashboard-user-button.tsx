@@ -18,7 +18,6 @@ import {
 
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -79,7 +78,7 @@ export const DashboardUserButton = () => {
               <CreditCardIcon className="size-4 text-black" />
               Billing
             </Button>
-            <Button size={"lg"} variant={"outline"} onClick={() => {}}>
+            <Button size={"lg"} variant={"outline"} onClick={onLogout}>
               <LogOutIcon className="size-4 text-black" />
               Logout
             </Button>
