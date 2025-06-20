@@ -25,6 +25,7 @@ const Page = async () => {
 
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
+
   return (
     <>
       <AgentsListHeader />
