@@ -35,14 +35,34 @@ export const AgentForm = ({
   onCancel,
   initialValues,
 }: AgentFormProps) => {
-  const trpc = useTRPC();
   // const router = useRouter();
+  const trpc = useTRPC();
   const queryClient = useQueryClient();
 
   const createAgent = useMutation(
     trpc.agents.create.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}));
+        await queryClient.invalidateQueries(
+          trpc.agents.getMany.queryOptions({})
+        );
+
+        //TODO : Invalidate free tier usage
+
+        onSuccess?.();
+      },
+      onError: (error) => {
+        toast.error(error.message);
+
+        // TODO: Check if error code is "FORBIDDEN", redirect to "/upgrade"
+      },
+    })
+  );
+  const updateAgent = useMutation(
+    trpc.agents.update.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(
+          trpc.agents.getMany.queryOptions({})
+        );
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(
@@ -53,6 +73,8 @@ export const AgentForm = ({
       },
       onError: (error) => {
         toast.error(error.message);
+
+        // TODO: Check if error code is "FORBIDDEN", redirect to "/upgrade"
       },
     })
   );
@@ -66,67 +88,74 @@ export const AgentForm = ({
   });
 
   const isEdit = !!initialValues?.id;
-  const isPending = createAgent.isPending;
+  const isPending = createAgent.isPending || updateAgent.isPending;
 
   const onSubmit = (values: z.infer<typeof AgentsInsertSchema>) => {
     if (isEdit) {
-      console.log("TODO: updateAgent");
+      updateAgent.mutate({ ...values, id: initialValues.id });
     } else {
       createAgent.mutate(values);
     }
   };
 
   return (
-    <Form {...form}>
-      <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex justify-between gap-4 ">
-          <GeneratedAvatar
-            seed={form.watch("name") || "New Agent"}
-            variant={"botttsNeutral"}
-            className="border size-16"
-          />
+    <>
+      <Form {...form}>
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="flex justify-between gap-4 ">
+            <GeneratedAvatar
+              seed={form.watch("name") || "New Agent"}
+              variant={"botttsNeutral"}
+              className="border size-16"
+            />
+            <FormField
+              name="name"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Agent Name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
-            name="name"
+            name="instructions"
             control={form.control}
             render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel>Name</FormLabel>
+              <FormItem>
+                <FormLabel>Instructions</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="Agent Name" />
+                  <Textarea
+                    {...field}
+                    placeholder="You are a helpful math assistant that can answer questions and help with assignments"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
-
-        <FormField
-          name="instructions"
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Instructions</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  placeholder="You are a helpful math assistant that can answer questions and help with assignments"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex justify-between gap-x-2">
-          {onCancel && (
-            <Button type="button" variant={"destructive"} disabled={isPending}>
-              Cancel
+          <div className="flex justify-between gap-x-2">
+            {onCancel && (
+              <Button
+                onClick={onCancel}
+                type="button"
+                variant={"destructive"}
+                disabled={isPending}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button disabled={isPending} type="submit">
+              {isEdit ? "Update" : "Create"}
             </Button>
-          )}
-          <Button disabled={isPending} type="submit">
-            {isEdit ? "Update" : "Create"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </Form>
+    </>
   );
 };

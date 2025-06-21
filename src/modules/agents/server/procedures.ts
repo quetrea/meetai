@@ -2,7 +2,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { agents } from "@/db/schema";
 import { TRPCError } from "@trpc/server";
-import { AgentsInsertSchema } from "../schemas";
+import { AgentsInsertSchema, AgentsUpdateSchema } from "../schemas";
 import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
 import {
   DEFAULT_PAGE,
@@ -14,13 +14,75 @@ import {
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const agentsRouter = createTRPCRouter({
+  update: protectedProcedure
+    .input(AgentsUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [selectedAgent] = await db
+        .select({
+          ...getTableColumns(agents),
+          meetingCount: sql<number>`5`,
+        })
+        .from(agents)
+        .where(
+          and(eq(agents.id, input.id), eq(agents.userId, ctx.auth.user.id))
+        );
+
+      if (!selectedAgent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent already removed or not found",
+        });
+      }
+
+      const [updatedAgent] = await db
+        .update(agents)
+        .set(input)
+        .where(
+          and(eq(agents.id, input.id), eq(agents.userId, ctx.auth.user.id))
+        )
+        .returning();
+
+      return updatedAgent;
+    }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [selectedAgent] = await db
+        .select({
+          ...getTableColumns(agents),
+          meetingCount: sql<number>`5`,
+        })
+        .from(agents)
+        .where(
+          and(eq(agents.id, input.id), eq(agents.userId, ctx.auth.user.id))
+        );
+
+      if (!selectedAgent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent already removed or not found",
+        });
+      }
+
+      const [removedAgent] = await db
+        .delete(agents)
+        .where(
+          and(
+            eq(agents.id, selectedAgent.id),
+            eq(agents.userId, selectedAgent.userId)
+          )
+        )
+        .returning();
+
+      return removedAgent;
+    }),
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const [existingAgent] = await db
         .select({
           ...getTableColumns(agents),
-          // TODO: Change to actual count
+
           meetingCount: sql<number>`5`,
         })
         .from(agents)
@@ -34,7 +96,6 @@ export const agentsRouter = createTRPCRouter({
 
       return existingAgent;
     }),
-
   getMany: protectedProcedure
     .input(
       z.object({
@@ -84,7 +145,6 @@ export const agentsRouter = createTRPCRouter({
         totalPages,
       };
     }),
-
   create: protectedProcedure
     .input(AgentsInsertSchema)
     .mutation(async ({ input, ctx }) => {
