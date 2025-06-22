@@ -12,8 +12,87 @@ import {
 } from "@/constants";
 
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { MeetingsInsertSchema, MeetingsUpdateSchema } from "../schemas";
 
 export const meetingsRouter = createTRPCRouter({
+  create: protectedProcedure
+    .input(MeetingsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const [createdMeeting] = await db
+        .insert(meetings)
+        .values({
+          ...input,
+          userId: ctx.auth.user.id,
+        })
+        .returning();
+
+      // TODO: Create Stream Call, Upsert Stream Users
+
+      return createdMeeting;
+    }),
+  update: protectedProcedure
+    .input(MeetingsUpdateSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [selectedMeeting] = await db
+        .select({
+          ...getTableColumns(meetings),
+        })
+        .from(meetings)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id))
+        );
+
+      if (!selectedMeeting) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Meeting already removed or not found",
+        });
+      }
+
+      const [updatedMeeting] = await db
+        .update(meetings)
+        .set(input)
+        .where(
+          and(
+            eq(meetings.id, selectedMeeting.id),
+            eq(meetings.userId, selectedMeeting.userId)
+          )
+        )
+        .returning();
+
+      return updatedMeeting;
+    }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [selectedMeeting] = await db
+        .select({
+          ...getTableColumns(meetings),
+        })
+        .from(meetings)
+        .where(
+          and(eq(meetings.id, input.id), eq(meetings.userId, ctx.auth.user.id))
+        );
+
+      if (!selectedMeeting) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Meeting already removed or not found",
+        });
+      }
+
+      const [removedMeeting] = await db
+        .delete(meetings)
+        .where(
+          and(
+            eq(meetings.id, selectedMeeting.id),
+            eq(meetings.userId, selectedMeeting.userId)
+          )
+        )
+        .returning();
+
+      return removedMeeting;
+    }),
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
