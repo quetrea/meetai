@@ -45,7 +45,7 @@ export const meetingsRouter = createTRPCRouter({
       if (!selectedMeeting) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Agent already removed or not found",
+          message: "Meeting already removed or not found",
         });
       }
 
@@ -77,7 +77,7 @@ export const meetingsRouter = createTRPCRouter({
       if (!selectedMeeting) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Agent already removed or not found",
+          message: "Meeting already removed or not found",
         });
       }
 
