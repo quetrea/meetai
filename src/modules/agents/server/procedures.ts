@@ -14,6 +14,19 @@ import {
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 export const agentsRouter = createTRPCRouter({
+  create: protectedProcedure
+    .input(AgentsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const [createdAgent] = await db
+        .insert(agents)
+        .values({
+          ...input,
+          userId: ctx.auth.user.id,
+        })
+        .returning();
+
+      return createdAgent;
+    }),
   update: protectedProcedure
     .input(AgentsUpdateSchema)
     .mutation(async ({ ctx, input }) => {
@@ -38,7 +51,10 @@ export const agentsRouter = createTRPCRouter({
         .update(agents)
         .set(input)
         .where(
-          and(eq(agents.id, input.id), eq(agents.userId, ctx.auth.user.id))
+          and(
+            eq(agents.id, selectedAgent.id),
+            eq(agents.userId, selectedAgent.userId)
+          )
         )
         .returning();
 
@@ -144,18 +160,5 @@ export const agentsRouter = createTRPCRouter({
         total: total.count,
         totalPages,
       };
-    }),
-  create: protectedProcedure
-    .input(AgentsInsertSchema)
-    .mutation(async ({ input, ctx }) => {
-      const [createdAgent] = await db
-        .insert(agents)
-        .values({
-          ...input,
-          userId: ctx.auth.user.id,
-        })
-        .returning();
-
-      return createdAgent;
     }),
 });
