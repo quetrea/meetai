@@ -9,7 +9,7 @@ import { useMeetingsFilters } from "../../hooks/use-meetings-filters";
 import { DEFAULT_PAGE_SIZE } from "@/constants";
 
 export const AgentIdFilter = () => {
-  const [filters, setFitlers] = useMeetingsFilters();
+  const [filters, setFilters] = useMeetingsFilters();
 
   const trpc = useTRPC();
 
@@ -41,7 +41,7 @@ export const AgentIdFilter = () => {
             </div>
           ),
         }))}
-        onSelect={(value) => setFitlers({ agentId: value })}
+        onSelect={(value) => setFilters({ agentId: value })}
         onSearch={setAgentSearch}
         value={filters.agentId ?? ""}
       />
