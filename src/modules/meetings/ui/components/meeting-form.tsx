@@ -147,6 +147,7 @@ export const MeetingForm = ({
                           <GeneratedAvatar
                             seed={agent.name}
                             variant="botttsNeutral"
+                            className="size-6"
                           />
                           <span className="text-sm">{agent.name}</span>
                         </div>
