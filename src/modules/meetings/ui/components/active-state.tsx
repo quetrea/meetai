@@ -14,7 +14,7 @@ export const ActiveState = ({ meetingId }: Props) => {
       <EmptyState
         image="/upcoming.svg"
         title="Meeting is active"
-        description="Meeting will end once all participants have"
+        description="Meeting will end once all participants have left"
       />
       <div className="flex flex-col-reverse lg:flex-row lg:justify-center items-center gap-2 w-full">
         <Button asChild className="w-full lg:w-auto ">
